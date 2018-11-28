@@ -31,7 +31,7 @@ set of experiments (Basic). To execute it, simply
 run:
 
 
-    $ ./driving_benchmark_example.py
+    $ ./benchmarks_084.py
 
 
 Keep in mind that, to run the command above, you need a CARLA 0.8.4 simulator
@@ -40,7 +40,7 @@ Keep in mind that, to run the command above, you need a CARLA 0.8.4 simulator
 This benchmark example can be further configured.
 Run the help command to see options available.
 
-    $ ./driving_benchmark_example.py --help
+    $ ./benchmarks_084.py --help
 
 
 One of the options available is to be able to continue
@@ -48,7 +48,7 @@ from a previous benchmark execution. For example,
 to continue a experiment in a basic benchmark
   with a log name of "driving_benchmark_test", run:
 
-    $ ./driving_benchmark_example.py --continue-experiment -n driving_benchmark_test
+    $ ./benchmarks_084.py --continue-experiment -n driving_benchmark_test
 
 
 !!! note
@@ -67,7 +67,7 @@ As explained on the legacy CARLA paper:
 The CoRL 2017 experiment suite can be run in a trivial agent by
 running:
 
-    $ ./driving_benchmark_example.py --corl-2017
+    $ ./benchmarks_084.py --corl-2017
 
 When running the driving benchmark for the basic configuration
 you should [expect these results](benchmark_creating/#expected-results)
@@ -79,5 +79,5 @@ you should [expect these results](benchmark_creating/#expected-results)
 The CARLA100 experiment suite can be run in a trivial agent by
 running:
 
-    $ ./driving_benchmark_example.py --carla100
+    $ ./benchmarks_084.py --carla100
 
