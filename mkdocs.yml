@@ -1,0 +1,18 @@
+site_name: CARLA Benchmarks
+repo_url: https://github.com/carla-simulator/carla
+docs_dir: Docs
+theme: readthedocs
+
+pages:
+- Driving Benchmark:
+  - 'Quick Start': 'benchmark_start.md'
+  - 'General Structure': 'benchmark_structure.md'
+  - 'Creating Your Benchmark': 'benchmark_creating.md'
+  - 'Computed Performance Metrics': 'benchmark_metrics.md'
+- Appendix:
+  - 'Driving Benchmark Sample Results Town01': 'benchmark_basic_results_town01.md'
+  - 'Driving Benchmark Sample Results Town02': 'benchmark_basic_results_town02.md'
+
+
+markdown_extensions:
+  - admonition
