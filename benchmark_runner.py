@@ -3,12 +3,12 @@ import os
 import logging
 import sys
 
-from cexp.benchmark import benchmark
 
 
-import benchmarks.corl_2017 as corl2017
-import benchmarks.no_crash as nocrash
+import version09x.benchmarks.corl_2017 as corl2017
+import version09x.benchmarks.no_crash as nocrash
 
+from version09x.benchmark import benchmark
 
 # TODO pip install atuomatically for the benchmark runner
 
