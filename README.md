@@ -11,9 +11,9 @@ Version 0.8.4:
 
 * CoRL2017 - [Docs](Docs/benchmark_start.md/#corl-2017) / [Paper](http://proceedings.mlr.press/v78/dosovitskiy17a/dosovitskiy17a.pdf).
 
-* CARLA100 - [Docs](Docs/benchmark_start.md/#carla-100) /[Paper] (out soon)
+* NoCrash - [Docs](Docs/benchmark_start.md/#carla-100) /[Paper] 
 
-
+[Version 0.9.6](Docs/benchmark_start.md)
 
 
 We are working on having a 0.9.X version of the CoRL2017 Benchmark.
