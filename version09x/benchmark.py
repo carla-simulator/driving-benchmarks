@@ -6,6 +6,7 @@ import importlib
 import shutil
 import numpy as np
 import traceback
+import tqdm
 
 from cexp.driving_batch import DrivingBatch
 
@@ -36,7 +37,8 @@ def read_benchmark_summary(benchmark_csv):
 
     # If the file does not exist, return None,None, to point out that data is missing
     if not os.path.exists(benchmark_csv):
-        return None
+        logging.debug(" Summary Not Produced, No CSV File")
+        return None, None
 
     f = open(benchmark_csv, "r")
     header = f.readline()
@@ -49,7 +51,8 @@ def read_benchmark_summary(benchmark_csv):
     count = 0
 
     if len(data_matrix) == 0:
-        return None
+        logging.debug(" Summary Not Produced, Matrix Empty")
+        return None, None
     if len(data_matrix.shape) == 1:
         data_matrix = np.expand_dims(data_matrix, axis=0)
 
@@ -193,7 +196,8 @@ def add_summary(environment_name, summary, json_filename, agent_checkpoint_name)
     if not os.path.exists(filename):
         csv_outfile = open(filename, 'w')
         csv_outfile.write("%s,%s,%s,%s,%s\n"
-                          % ('rep', 'episodes_completion', 'result', 'infractions_score', 'number_red_lights'))
+                          % ('rep', 'episodes_completion', 'result', 'infractions_score',
+                             'number_red_lights'))
 
         csv_outfile.close()
 
@@ -212,35 +216,39 @@ def add_summary(environment_name, summary, json_filename, agent_checkpoint_name)
     csv_outfile = open(filename, 'a')
     csv_outfile.write("%f" % float(repetition_number) )
     for metric_result in set_of_metrics:
-
         csv_outfile.write(",%f" % results[metric_result])
 
     csv_outfile.write("\n")
     csv_outfile.close()
 
 
+def benchmark_env_loop(renv, agent):
 
-def benchmark_env_loop(renv, agent, save_data):
 
-    state, _ = renv.reset(StateFunction = agent.get_sensors, save_data=save_data)
+    sensors_dict = agent.get_sensors_dict()
+    renv.set_sensors(sensors_dict)
+
+    state, _ = renv.reset(StateFunction=agent.get_state)
 
     while renv.get_info()['status'] == 'Running':
-
         controls = agent.step(state)
         state, _ = renv.step([controls])
 
+    info = renv.get_info()
     renv.stop()
     agent.reset()
+
+    return info
 
 
 
 
 def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_path,
-              batch_size=1, save_dataset=False, port=None,
-              agent_checkpoint_name=None):
+              batch_size=1, save_sensors=False, port=None,
+              agent_checkpoint_name=None, non_rendering_mode=False):
 
     """
-    Computes the benchmark for a given json file containing a certain number of experiences.
+    Compute the benchmark for a given json file containing a certain number of experiences.
 
     :param benchmark_name: the name of the json file used for the benchmark
     :param docker_image: the docker image that is going to be created to perform the bench
@@ -260,17 +268,20 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
     if agent_checkpoint_name is None:
         agent_checkpoint_name = agent_module.__name__
 
-    params = {'save_dataset': save_dataset,
+    params = {'save_dataset': True,
+              'save_sensors': save_sensors,
+              'save_trajectories': True,  # TODO check where to put this trajectories
               'docker_name': docker_image,
               'gpu': gpu,
               'batch_size': batch_size,
               'remove_wrong_data': False,
-              'non_rendering_mode': False,  # This could be added as a parameter
+              'non_rendering_mode': non_rendering_mode,
               'carla_recording': True
               }
     env_batch = None
     # this could be joined
     while True:
+
         try:
             # We reattempt in case of failure of the benchmark
             dbatch = DrivingBatch(benchmark_name, params, port=port)
@@ -280,28 +291,30 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
             # take the path to the class and instantiate an agent
             agent = getattr(agent_module, agent_module.__name__)(agent_params_path)
             # if there is no name for the checkpoint we set it as the agent module name
-            for renv in dbatch:
 
-                #if  len(env.get_summary()) >
-                try:
-                    summary = benchmark_env_loop(renv, agent, save_dataset)
-                    # Just execute the environment. For this case the rewards doesnt matter.
-                    #summary = env.get_summary()
-                    logging.debug("Finished episode got summary ")
-                    # Add partial summary to allow continuation
-                    # TODO check how to add summary
-                    add_summary(renv._environment_name, summary,
-                                benchmark_name, agent_checkpoint_name)
+            with tqdm(total=len(dbatch)) as pbar:  # we keep a progress bar
+                for renv in dbatch:
+                    try:
+                        env_exec_info = benchmark_env_loop(renv, agent)
+                        # Just execute the environment. For this case the rewards doesnt matter.
+                        #summary = env.get_summary()
+                        logging.debug("Finished episode got summary ")
+                        # Add partial summary to allow continuation
+                        # TODO check how to add summary
+                        add_summary(renv._environment_name, env_exec_info['summary'],
+                                    benchmark_name, agent_checkpoint_name)
+                        pbar.update(1)
 
-                except KeyboardInterrupt:
-                    break
-                except Exception as e:
-                    traceback.print_exc()
-                    # By any exception you have to delete the environment generated data
-                    renv.eliminate_data()
-                    # And you have to try again so we retry everything and rebuild the CEXP
-                    # TODO maybe keep the docker
-                    raise e
+                    except KeyboardInterrupt:
+                        break
+                    except Exception as e:
+                        traceback.print_exc()
+                        # By any exception you have to delete the environment generated data
+                        renv.remove_data()
+                        # And you have to try again so we retry everything and rebuild the CEXP
+                        # TODO maybe keep the docker
+                        raise e
+
 
             del env_batch
             break
@@ -310,6 +323,7 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
             break
         except:
             traceback.print_exc()
+            break
 
 
 

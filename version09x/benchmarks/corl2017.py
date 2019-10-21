@@ -2,16 +2,18 @@
 import json
 import os
 
-from cexp.benchmark import benchmark
+from version09x.benchmark import benchmark
 
 
 def produce_csv():
     pass
 
-def perform(docker, gpu, agent, config, port):
+def perform(docker, gpu, agent, config, port, agent_name, non_rendering_mode):
 
     # empty
     conditions = ['training', 'newtown', 'newweathertown', 'newweather']
+
+    tasks = ['empty', 'one_curve', 'navigation', 'navigation_dynamic']
 
     towns = {'training': 'Town01',
              'newweather': 'Town01',
@@ -19,28 +21,28 @@ def perform(docker, gpu, agent, config, port):
              'newweathertown': 'Town02'}
 
     for c in conditions:
-        t = 'empty'
-        benchmark_file = os.path.join('database', 'nocrash', 'nocrash_' + c + '_' + t + '_' + towns[c] + '.json')
-        print (" STARTING BENCHMARK ", benchmark_file)
-        benchmark(benchmark_file, docker, gpu, agent, config, port=port)
-        print (" FINISHED ")
+
+        for t in tasks:
+            benchmark_file = os.path.join('version09x/descriptions', 'corl2017',
+                                          'corl2017_' + c + '_' + t + '_' + towns[c] + '.json')
+            print (" STARTING BENCHMARK ", benchmark_file)
+            benchmark(benchmark_file, docker, gpu, agent, config, port=port,
+                      agent_checkpoint_name=agent_name, non_rendering_mode=non_rendering_mode)
+            print (" FINISHED ")
 
 
+
+def is_generated():
+
+    if os.path.exists('version09x/descriptions/corl2017/corl2017_newweather_empty_Town01.json'):
+        return True
+
+    else:
+        return False
 
 def generate():
 
-    root_route_file_position = 'database/corl2017'
-    #filename_town01 = os.path.join(root_route_file_position, 'Town01_navigation.json')
-
-    # The sensor information should be on get data
-    sensors = [{'type': 'sensor.camera.rgb',
-                'x': 2.0, 'y': 0.0,
-                'z': 1.40, 'roll': 0.0,
-                'pitch': -15.0, 'yaw': 0.0,
-                'width': 800, 'height': 600,
-                'fov': 100,
-                'id': 'rgb'}
-               ]
+    root_route_file_position = 'version09x/descriptions/corl2017'
 
     # For each of the routes to be evaluated.
 
@@ -67,14 +69,14 @@ def generate():
                                     "SoftRainSunset"]
                     }
 
-    tasks = {'empty': {'Town01': {"file": "None"},
-                       'Town02': {"file": "None"}
+    tasks = {'empty': {'Town01': {},
+                       'Town02': {}
                         },
-             'one_curve': {'Town01': {"file": "None"},
-                            'Town02': {"file": "None"}
+             'one_curve': {'Town01': {},
+                            'Town02': {}
                            },
-             'navigation': {'Town01': {"file": "None"},
-                            'Town02': {"file": "None"}
+             'navigation': {'Town01': {},
+                            'Town02': {}
                             },
 
              'navigation_dynamic': {'Town01': {'background_activity': {"vehicle.*": 20,
@@ -84,7 +86,6 @@ def generate():
              }
 
     }
-
 
     name_dict = {'training':{'Town01': 'training',
                              'Town02': 'newtown'
@@ -103,7 +104,6 @@ def generate():
                 # get the actual set  from th name
                 w_set = weather_sets[w_set_name]
                 new_json = {"envs": {},
-                            "additional_sensors": sensors,
                             "package_name": 'corl2017_' + name_dict[w_set_name][town_name] + '_'
                                             + task_name + '_' + town_name}
 

@@ -9,7 +9,7 @@ def produce_csv():  # Maybe leave just like the empty task here.
     pass
 
 
-def perform(docker, gpu, agent, config, port):
+def perform(docker, gpu, agent, config, port, agent_name, non_rendering_mode):
 
     # Perform the benchmark
 
@@ -23,17 +23,21 @@ def perform(docker, gpu, agent, config, port):
              'newtown': 'Town02',
              'newweathertown': 'Town02'}
 
+
+
     for c in conditions:
         for t in tasks:
-            benchmark_file = os.path.join('database', 'nocrash', 'nocrash_' + c + '_' + t + '_' + towns[c] + '.json')
+            benchmark_file = os.path.join('version09x','descriptions', 'nocrash',
+                                          'nocrash_' + c + '_' + t + '_' + towns[c] + '.json')
             print (" STARTING BENCHMARK ", benchmark_file)
-            benchmark(benchmark_file, docker, gpu, agent, config, port=port)
-            print (" FINISHED ")
+            benchmark(benchmark_file, docker, gpu, agent, config, port=port,
+                      agent_checkpoint_name=agent_name, non_rendering_mode=non_rendering_mode)
+
 
 
 def is_generated():
 
-    if os.path.exists('descriptions/nocrash/nocrash_newtown_dense_Town02.json'):
+    if os.path.exists('version09x/nocrash/nocrash_newtown_dense_Town02.json'):
         return True
 
     else:
@@ -41,20 +45,22 @@ def is_generated():
 
 def generate():
 
+    """
+    This function generates the json file with the full benchmark description.
+    This is ingested by the CEXP to produce the benchmark.
+
+    It should generate the json description files inside the description folder.
+    :return: None
+    """
+
 
     # TODO this is hardcoded
-    root_route_file_position = 'database/nocrash'
-    # root_route_file_position = 'srunner/challenge/'
-    #filename_town01 = os.path.join(root_route_file_position, 'Town01_navigation.json')
-
-
+    root_route_file_position = 'version09x/descriptions/nocrash'
 
     # For each of the routes to be evaluated.
-
     # Tows to be generated
     town_sets = {'Town01': 'Town01_navigation.xml',
                  'Town02': 'Town02_navigation.xml'}
-
 
     # Weathers to be generated later
     weather_sets = {'training': ["ClearNoon",
@@ -65,8 +71,8 @@ def generate():
                                     "SoftRainSunset"]
                     }
 
-    tasks = {'empty': { 'Town01': {"file": "None"},
-                        'Town02': {"file": "None"}
+    tasks = {'empty': { 'Town01': {},
+                        'Town02': {}
                         },
              'regular': { 'Town01': {'background_activity': {"vehicle.*": 20,
                                                             "walker.*": 50}} ,
@@ -110,7 +116,7 @@ def generate():
 
                         env_dict = {
                             "route": {
-                                "file": 'nocrash/' + town_sets[town_name],
+                                "file":  town_sets[town_name],
                                 "id": env_number
                             },
                             "scenarios": tasks[task_name][town_name],

@@ -5,8 +5,8 @@ import sys
 
 
 
-import version09x.benchmarks.corl_2017 as corl2017
-import version09x.benchmarks.no_crash as nocrash
+import version09x.benchmarks.corl2017 as corl2017
+import version09x.benchmarks.nocrash as nocrash
 
 from version09x.benchmark import benchmark
 
@@ -14,19 +14,22 @@ from version09x.benchmark import benchmark
 
 
 # Run the predefined benchmarks
+# We have a list of them to be runned.
 def predefined_benchmarks(args):
 
     if args.benchmark == 'CoRL2017':
         # This case is the full benchmark in all its glory
         if not corl2017.is_generated():
             corl2017.generate()
-        corl2017.perform(args.docker, args.gpu, args.agent, args.config, args.port)
+        corl2017.perform(args.docker, args.gpu, args.agent, args.config,
+                        args.port, args.agent_name, args.non_rendering_mode)
 
     elif args.benchmark == 'NoCrash':
         # This is generated directly and benchmark is started
         if not nocrash.is_generated():
             nocrash.generate()
-        nocrash.perform(args.docker, args.gpu, args.agent, args.config, args.port)
+        nocrash.perform(args.docker, args.gpu, args.agent, args.config,
+                        args.port, args.agent_name, args.non_rendering_mode)
     elif args.benchmark == 'CARLA_AD_2019_VALIDATION':
         print (" The other benchmarks related to carla challenge to be implemented")
 
@@ -49,7 +52,7 @@ if __name__ == '__main__':
     # python3 benchmark -b CoRL2017 -a agent -d
     # python3 benchmark -b NoCrash -a agent -d carlalatest:latest --port 4444
 
-    description = ("Benchmark running")
+    description = ("Benchmark running tool")
 
     parser = argparse.ArgumentParser(description=description)
 
@@ -60,11 +63,16 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--benchmark', default=None, help='The benchmark ALIAS or full'
                                                                 'path to the json file')
 
-    parser.add_argument('-c', '--config', default=None, help='The path to the configuration file')
+    parser.add_argument('-c', '--config', default=None, help='The path to the configuration '
+                                                             'file for the agent.')
 
     parser.add_argument('-g', '--gpu', default="0", help='The gpu number to be used')
 
+    parser.add_argument('-an', '--agent-name', help='The gpu number to be used')
+
     parser.add_argument('--port', default=None, help='Port for an already existent server')
+
+    parser.add_argument('--non-rendering-mode', action='store_true', help='Set debug mode')
 
     parser.add_argument('--debug', action='store_true', help='Set debug mode')
 
