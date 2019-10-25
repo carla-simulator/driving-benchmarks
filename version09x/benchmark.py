@@ -6,7 +6,7 @@ import importlib
 import shutil
 import numpy as np
 import traceback
-import tqdm
+from tqdm import tqdm
 
 from cexp.driving_batch import DrivingBatch
 
@@ -281,7 +281,6 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
     env_batch = None
     # this could be joined
     while True:
-
         try:
             # We reattempt in case of failure of the benchmark
             dbatch = DrivingBatch(benchmark_name, params, port=port)
@@ -291,16 +290,13 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
             # take the path to the class and instantiate an agent
             agent = getattr(agent_module, agent_module.__name__)(agent_params_path)
             # if there is no name for the checkpoint we set it as the agent module name
-
             with tqdm(total=len(dbatch)) as pbar:  # we keep a progress bar
                 for renv in dbatch:
                     try:
-                        env_exec_info = benchmark_env_loop(renv, agent)
                         # Just execute the environment. For this case the rewards doesnt matter.
-                        #summary = env.get_summary()
+                        env_exec_info = benchmark_env_loop(renv, agent)
                         logging.debug("Finished episode got summary ")
                         # Add partial summary to allow continuation
-                        # TODO check how to add summary
                         add_summary(renv._environment_name, env_exec_info['summary'],
                                     benchmark_name, agent_checkpoint_name)
                         pbar.update(1)
@@ -311,10 +307,7 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
                         traceback.print_exc()
                         # By any exception you have to delete the environment generated data
                         renv.remove_data()
-                        # And you have to try again so we retry everything and rebuild the CEXP
-                        # TODO maybe keep the docker
                         raise e
-
 
             del env_batch
             break
@@ -324,8 +317,6 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
         except:
             traceback.print_exc()
             break
-
-
 
 
 def benchmark_cleanup(package_name, agent_checkpoint_name):
