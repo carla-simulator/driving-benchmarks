@@ -13,10 +13,8 @@ Version 0.8.4:
 
 * NoCrash - [Docs](version084/docs/benchmark_start.md/#carla-100) /[Paper]() 
 
-[Version 0.9.6](Docs/benchmark_start.md)
+[Version 0.9.6](version09x/docs/benchmark_start.md)
 
-
-We are working on having a 0.9.X version of the CoRL2017 Benchmark.
 We happily accept new benchmarks as pull requests.
 
 
