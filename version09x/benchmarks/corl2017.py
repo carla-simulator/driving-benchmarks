@@ -47,7 +47,7 @@ def generate():
     # For each of the routes to be evaluated.
 
     # Tows to be generated
-    town_sets = {'Town01': {'empty': 'Town01_straight.xml',
+    town_sets = {'Town01': {'straight': 'Town01_straight.xml',
                             'one_curve': 'Town01_one_curve.xml',
                             'navigation': 'Town01_navigation.xml',
                             'navigation_dynamic': 'Town01_navigation.xml'
