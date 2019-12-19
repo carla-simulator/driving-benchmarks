@@ -11,7 +11,7 @@ Version 0.8.4:
 
 * CoRL2017 - [Docs](Docs/benchmark_start.md/#corl-2017) / [Paper](http://proceedings.mlr.press/v78/dosovitskiy17a/dosovitskiy17a.pdf).
 
-* NoCrash - [Docs](Docs/benchmark_start.md/#carla-100) /[Paper] (out soon)
+* NoCrash - [Docs](Docs/benchmark_start.md/#carla-100) /[Paper] (https://arxiv.org/abs/1904.08980)
 
 
 
