@@ -1,37 +1,83 @@
 
 import json
 import os
+import sys
+import importlib
 
 
-from version09x.benchmark import benchmark
 
-def produce_csv():  # Maybe leave just like the empty task here.
-    pass
+def perform(docker, gpu, agent, config, port, agent_name, non_rendering_mode,
+            save_trajectories, small=False, make_videos=False, single_weather=False):
 
+    """
 
-def perform(docker, gpu, agent, config, port, agent_name, non_rendering_mode):
-
+    :param docker:
+    :param gpu:
+    :param agent:
+    :param config:
+    :param port:
+    :param agent_name:
+    :param non_rendering_mode:
+    :param save_trajectories:
+    :param small: If small is set to true it means that the only new town conditions will be
+                  used
+    :return:
+    """
     # Perform the benchmark
-
-    # empty
-    conditions = ['training', 'newtown', 'newweathertown', 'newweather']
+    if single_weather:
+        conditions = ['trainingsw', 'newtownsw']
+    elif small:
+        conditions = ['training', 'newtown']
+    else:
+        conditions = ['training', 'newtown', 'newweathertown', 'newweather']
 
     tasks = ['empty', 'regular', 'dense']
 
     towns = {'training': 'Town01',
              'newweather': 'Town01',
              'newtown': 'Town02',
-             'newweathertown': 'Town02'}
+             'newweathertown': 'Town02',
+             'trainingsw': 'Town01',
+             'newtownsw': 'Town02'}
+
+    module_name = os.path.basename(agent).split('.')[0]
+    sys.path.insert(0, os.path.dirname(agent))
+    print ( "HANG ON IMPORT")
+    agent_module = importlib.import_module(module_name)
+    if agent_name is None:
+        agent_name = agent_module.__name__
 
 
+    from version09x.benchmark import execute_benchmark
 
     for c in conditions:
         for t in tasks:
-            benchmark_file = os.path.join('version09x','descriptions', 'nocrash',
-                                          'nocrash_' + c + '_' + t + '_' + towns[c] + '.json')
-            print (" STARTING BENCHMARK ", benchmark_file)
-            benchmark(benchmark_file, docker, gpu, agent, config, port=port,
-                      agent_checkpoint_name=agent_name, non_rendering_mode=non_rendering_mode)
+            file_name = os.path.join('nocrash', 'nocrash_' + c + '_' + t + '_' + towns[c] + '.json')
+            execute_benchmark(file_name,
+                              docker, gpu, agent_module, config, port=port,
+                              agent_name=agent_name,
+                              non_rendering_mode=non_rendering_mode,
+                              save_trajectories=save_trajectories,
+                              make_videos=make_videos)
+
+            #benchmark_file = os.path.join('version09x','descriptions', 'nocrash',
+            #                              'nocrash_' + c + '_' + t + '_' + towns[c] + '.json')
+            #benchmark(benchmark_file, docker, gpu, agent_module, config, port=port,
+            #          agent_checkpoint_name=agent_name,
+            #          non_rendering_mode=non_rendering_mode,
+            #          save_trajectories=save_trajectories)
+            # Create the results folder here if it does not exists
+            #if not os.path.exists('_results'):
+            #    os.mkdir('_results')
+
+            #file_base_out = os.path.join('_results', agent_name + '_nocrash_' + c + '_' + t +
+            #                             '.csv')
+            #summary_data = check_benchmarked_episodes_metric(benchmark_file,
+            #                                                 agent_name)
+
+            #if check_benchmark_finished(benchmark_file, agent_name):
+            #    write_summary_csv(file_base_out, agent_name, summary_data)
+
 
 
 
@@ -68,22 +114,27 @@ def generate():
                                   "HardRainNoon",
                                    "ClearSunset"],
                     'new_weather':  ["WetSunset",
-                                    "SoftRainSunset"]
+                                    "SoftRainSunset"],
+                    'single_weather': ["ClearNoon"]
                     }
 
     tasks = {'empty': { 'Town01': {},
                         'Town02': {}
                         },
              'regular': { 'Town01': {'background_activity': {"vehicle.*": 20,
-                                                            "walker.*": 50}} ,
+                                                            "walker.*": 125,
+                                                             "cross_factor": 0.5}} ,
                           'Town02': {'background_activity': {"vehicle.*": 15,
-                                                              "walker.*": 50}}
+                                                              "walker.*": 100,
+                                                             "cross_factor": 0.5}}
 
              },
              'dense': {'Town01': {'background_activity': {"vehicle.*": 100,
-                                                             "walker.*": 250}},
+                                                             "walker.*": 400,
+                                                          "cross_factor": 0.5}},
                          'Town02': {'background_activity': {"vehicle.*": 70,
-                                                             "walker.*": 150}}
+                                                             "walker.*": 300,
+                                                            "cross_factor": 0.5}}
 
                          }
 
@@ -96,7 +147,10 @@ def generate():
                  'new_weather': {'Town01': 'newweather',
                                  'Town02': 'newweathertown'
 
-                 }
+                 },
+                 'single_weather': {'Town01': 'trainingsw',
+                              'Town02': 'newtownsw'
+                              },
     }
 
     for task_name in tasks.keys():
@@ -135,6 +189,3 @@ def generate():
                     # with open(os.path.join(root_route_file_position, 'all_towns_traffic_scenarios3_4.json'), 'w') as fo:
                     fo.write(json.dumps(new_json, sort_keys=True, indent=4))
 
-
-if __name__ == '__main__':
-    generate_nocrash_config_file()

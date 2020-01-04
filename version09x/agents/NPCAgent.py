@@ -23,7 +23,6 @@ class NPCAgent(object):
             self._agent = BasicAgent(exp._ego_actor)
 
         if not self._route_assigned:
-
             plan = []
             for transform, road_option in exp._route:
                 wp = exp._ego_actor.get_world().get_map().get_waypoint(transform.location)
@@ -37,7 +36,13 @@ class NPCAgent(object):
         The agent sets the sensors that it is going to use. That has to be
         set into the environment for it to produce this data.
         """
-        sensors_dict = [
+        sensors_dict = [{'type': 'sensor.camera.rgb',
+                'x': 2.0, 'y': 0.0,
+                'z': 1.40, 'roll': 0.0,
+                'pitch': -15.0, 'yaw': 0.0,
+                'width': 800, 'height': 600,
+                'fov': 100,
+                'id': 'rgb_central'}
                         ]
 
         return sensors_dict
@@ -52,11 +57,8 @@ class NPCAgent(object):
 
         # The first time this function is call we initialize the agent.
         self._setup(exp_list[0])
-        input = {
-
-        }
-
-        return input
+        exp = exp_list[0]
+        return exp.get_sensor_data()
 
     def step(self, state):
 
@@ -68,7 +70,7 @@ class NPCAgent(object):
         """
         # The sensors however are not needed since this basically run an step for the
         # NPC default agent at CARLA:
-        control, _, _ = self._agent.run_step()
+        control = self._agent.run_step()
         logging.debug("Output %f %f %f " % (control.steer, control.throttle, control.brake))
         return control
 

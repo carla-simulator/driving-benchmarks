@@ -1,17 +1,20 @@
 
 import json
 import os
+import sys
+import importlib
 
-from version09x.benchmark import benchmark
 
+# TODO perform could be the same function for everyone.
 
-def produce_csv():
-    pass
-
-def perform(docker, gpu, agent, config, port, agent_name, non_rendering_mode):
+def perform(docker, gpu, agent, config, port, agent_name,
+            non_rendering_mode, save_trajectories, small=False):
 
     # empty
-    conditions = ['training', 'newtown', 'newweathertown', 'newweather']
+    if small:
+        conditions = ['training', 'newtown']
+    else:
+        conditions = ['training', 'newtown', 'newweathertown', 'newweather']
 
     tasks = ['empty', 'one_curve', 'navigation', 'navigation_dynamic']
 
@@ -20,15 +23,47 @@ def perform(docker, gpu, agent, config, port, agent_name, non_rendering_mode):
              'newtown': 'Town02',
              'newweathertown': 'Town02'}
 
-    for c in conditions:
 
+    module_name = os.path.basename(agent).split('.')[0]
+    #sys.path.insert(0, os.path.dirname(agent))
+    print (" importing the agent ! ! ", module_name, " ", agent)
+    agent_module = importlib.import_module(module_name)
+
+    print ( " Trying yo import !")
+
+    from version09x.benchmark import execute_benchmark
+
+    if agent_name is None:
+        agent_name = agent_module.__name__
+    print ( " Trying yo import !")
+    for c in conditions:
         for t in tasks:
-            benchmark_file = os.path.join('version09x/descriptions', 'corl2017',
-                                          'corl2017_' + c + '_' + t + '_' + towns[c] + '.json')
-            print (" STARTING BENCHMARK ", benchmark_file)
-            benchmark(benchmark_file, docker, gpu, agent, config, port=port,
-                      agent_checkpoint_name=agent_name, non_rendering_mode=non_rendering_mode)
-            print (" FINISHED ")
+            file_name = os.path.join('corl2017', 'corl2017_' + c + '_' + t + '_' + towns[c] + '.json')
+            execute_benchmark(file_name,
+                              docker, gpu, agent_module, config, port=port,
+                              agent_name=agent_name,
+                              non_rendering_mode=non_rendering_mode,
+                              save_trajectories=save_trajectories,
+                              make_videos=make_videos)
+            #benchmark_file = os.path.join('version09x/descriptions', 'corl2017',
+            #                              'corl2017_' + c + '_' + t + '_' + towns[c] + '.json')
+            #print (" STARTING BENCHMARK ", benchmark_file)
+            #benchmark(benchmark_file, docker, gpu, agent_module, config, port=port,
+            #          agent_checkpoint_name=agent_name, non_rendering_mode=non_rendering_mode,
+            #          save_trajectories=save_trajectories)
+            # Create the results folder here if it does not exists
+            #if not os.path.exists('_results'):
+            #    os.mkdir('_results')
+
+
+            #file_base_out = os.path.join('_results', agent_name + '_corl2017_' + c + '_' + t +
+            #                             '.csv')
+            #summary_data = check_benchmarked_episodes_metric(benchmark_file,
+            #                                                 agent_name)
+
+            #if check_benchmark_finished(benchmark_file, agent_name):
+            #    write_summary_csv(file_base_out, agent_name, summary_data)
+
 
 
 
@@ -80,9 +115,13 @@ def generate():
                             },
 
              'navigation_dynamic': {'Town01': {'background_activity': {"vehicle.*": 20,
-                                                                        "walker.*": 50}} ,
+                                                                        "walker.*": 50,
+                                                                       "cross_factor": 0.1},
+                                                                        } ,
                                     'Town02': {'background_activity': {"vehicle.*": 15,
-                                                                       "walker.*": 50}}
+                                                                       "walker.*": 50,
+                                                                       "cross_factor": 0.1}
+                                               }
              }
 
     }
@@ -133,7 +172,3 @@ def generate():
                     fo.write(json.dumps(new_json, sort_keys=True, indent=4))
 
 
-
-if __name__ == '__main__':
-
-    generate_corl2017_config_file()

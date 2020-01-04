@@ -21,7 +21,8 @@ def parse_results_summary(summary):
         'episodes_completion': summary['score_route'],
         'result': float(summary['result'] == 'SUCCESS'),
         'infractions_score': summary['score_penalty'],
-        'number_red_lights': summary['number_red_lights']
+        'number_red_lights': summary['number_red_lights'],
+        'total_number_traffic_lights': summary['total_number_traffic_lights']
     }
 
     return result_dictionary
@@ -132,7 +133,7 @@ def check_benchmark_finished(json_filename, agent_checkpoint_name):
         path = os.path.join(os.environ["SRL_DATASET_PATH"],  json_file['package_name'], env_name,
                             agent_checkpoint_name + '_benchmark_summary.csv')
         if not os.path.exists(path):
-            print ( " PATH ", path, "does not exist")
+            print (" PATH ", path, "does not exist")
             return False
 
     return True
@@ -172,6 +173,87 @@ def check_benchmarked_episodes_metric(json_filename, agent_checkpoint_name):
     return benchmarked_metric_dict
 
 
+def summarize_benchmark(summary_data):
+
+
+    final_dictionary = {}
+    # we just get the headers for the final dictionary
+    for key in summary_data.keys():
+        # The csv reading bug.
+        if key == 'total_number_traffic_lights' or key == 'number_red_lights' or\
+                key == 'total_number_traffic_light' or key == 'number_red_light':
+            continue
+        final_dictionary.update({key: 0})
+
+    for metric in summary_data.keys():
+        if metric == 'total_number_traffic_lights' or metric == 'number_red_lights' or\
+            metric == 'total_number_traffic_light' or metric == 'number_red_light':
+            continue
+        try:
+            final_dictionary[metric] = sum(summary_data[metric]) / len(summary_data[metric])
+        except KeyError:  # To overcome the bug on reading files csv
+            final_dictionary[metric] = sum(summary_data[metric[:-1]]) / len(summary_data[metric])
+
+
+    # Weird things for the CSV BUG.
+    try:
+        final_dictionary.update({'average_percentage_red_lights':
+                                     sum(summary_data['number_red_lights'])/
+                                         sum(summary_data['total_number_traffic_lights'])
+                                 })
+    except:
+        try:
+            final_dictionary.update({'average_percentage_red_lights':
+                                         sum(summary_data['number_red_light']) /
+                                         sum(summary_data['total_number_traffic_lights'])
+                                     })
+        except:
+            final_dictionary.update({'average_percentage_red_lights':
+                                         sum(summary_data['number_red_lights']) /
+                                         sum(summary_data['total_number_traffic_light'])
+                                     })
+
+    return final_dictionary
+
+
+def write_summary_csv(out_filename, agent_checkpoint_name, summary_data):
+
+    """
+        If produce a csv output that summarizes a benchmark
+    """
+
+    fixed_metrics_list = ['episodes_completion',
+                           'result',
+                           'infractions_score',
+                           'average_percentage_red_lights']
+    print ("Writting summary")
+    print (out_filename)
+    #  We check if the csv already exists. TODO check correctness
+    # TODO we should remove if it is not succesful written
+    # Now we finally make the summary from all the files
+    summary_dict = summarize_benchmark(summary_data)
+
+    if not os.path.exists(out_filename):
+
+        csv_outfile = open(out_filename, 'w')
+        csv_outfile.write("%s" % 'step')
+        for metric in fixed_metrics_list:
+            csv_outfile.write(",%s" % metric)
+
+        csv_outfile.write("\n")
+        csv_outfile.close()
+
+    csv_outfile = open(out_filename, 'a')
+    csv_outfile.write("%s" % (agent_checkpoint_name.split('_')[-1]))
+
+    # TODO AVOID GETTING HERE IF IT FAILS
+    for metric in fixed_metrics_list:
+        csv_outfile.write(",%f" % (summary_dict[metric]))
+
+    csv_outfile.write("\n")
+
+    csv_outfile.close()
+
 
 
 def add_summary(environment_name, summary, json_filename, agent_checkpoint_name):
@@ -191,13 +273,14 @@ def add_summary(environment_name, summary, json_filename, agent_checkpoint_name)
     # if it doesnt exist we add the file, this is how we are writting.
     filename = os.path.join(os.environ["SRL_DATASET_PATH"], json_file['package_name'],
                             environment_name, agent_checkpoint_name + '_benchmark_summary.csv')
-    set_of_metrics = ['episodes_completion', 'result', 'infractions_score', 'number_red_lights']
+    set_of_metrics = ['episodes_completion', 'result', 'infractions_score',
+                      'number_red_lights', 'total_number_traffic_lights']
 
     if not os.path.exists(filename):
         csv_outfile = open(filename, 'w')
-        csv_outfile.write("%s,%s,%s,%s,%s\n"
+        csv_outfile.write("%s,%s,%s,%s,%s,%s\n"
                           % ('rep', 'episodes_completion', 'result', 'infractions_score',
-                             'number_red_lights'))
+                             'number_red_lights', 'total_number_traffic_lights'))
 
         csv_outfile.close()
 
@@ -222,17 +305,23 @@ def add_summary(environment_name, summary, json_filename, agent_checkpoint_name)
     csv_outfile.close()
 
 
-def benchmark_env_loop(renv, agent):
-
+def benchmark_env_loop(renv, agent, save_trajectories=False):
 
     sensors_dict = agent.get_sensors_dict()
     renv.set_sensors(sensors_dict)
 
     state, _ = renv.reset(StateFunction=agent.get_state)
 
-    while renv.get_info()['status'] == 'Running':
-        controls = agent.step(state)
-        state, _ = renv.step([controls])
+    with tqdm(total=renv.get_timeout()) as pbar:  # we keep a progress bar
+        while renv.get_info()['status'] == 'Running':
+
+            controls = agent.step(state)
+            state, _ = renv.step([controls])
+            pbar.update(0.05)
+
+    # There is the possibility of saving the trajectories that the vehicles went over.
+    if save_trajectories:
+        renv.draw_trajectory('_trajectories')
 
     info = renv.get_info()
     renv.stop()
@@ -243,9 +332,10 @@ def benchmark_env_loop(renv, agent):
 
 
 
-def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_path,
+def benchmark(benchmark_name, docker_image, gpu, agent_module, agent_params_path,
               batch_size=1, save_sensors=False, port=None,
-              agent_checkpoint_name=None, non_rendering_mode=False):
+              agent_checkpoint_name=None, non_rendering_mode=False,
+              save_trajectories=False, make_videos=False):
 
     """
     Compute the benchmark for a given json file containing a certain number of experiences.
@@ -253,6 +343,7 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
     :param benchmark_name: the name of the json file used for the benchmark
     :param docker_image: the docker image that is going to be created to perform the bench
     :param gpu: the gpu number to be used
+    :param agent_module: the module of the agent class to be benchmarked.
     :param agent_class_path: the pointer to the agent that is going to be benchmarked
     :param agent_params_path: the pointer to the params file of the agent
     :param batch_size: number of repetions ( Simultaneous ) NOT IMPLEMENTED
@@ -261,16 +352,9 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
     :param port: the port, in this case expect the docker to not be initialized
     :return:
     """
-
-    module_name = os.path.basename(agent_class_path).split('.')[0]
-    sys.path.insert(0, os.path.dirname(agent_class_path))
-    agent_module = importlib.import_module(module_name)
-    if agent_checkpoint_name is None:
-        agent_checkpoint_name = agent_module.__name__
-
     params = {'save_dataset': True,
               'save_sensors': save_sensors,
-              'save_trajectories': True,  # TODO check where to put this trajectories
+              'make_videos': make_videos,
               'docker_name': docker_image,
               'gpu': gpu,
               'batch_size': batch_size,
@@ -282,6 +366,7 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
     # this could be joined
     while True:
         try:
+            print (" STARING BENCHMARK ")
             # We reattempt in case of failure of the benchmark
             dbatch = DrivingBatch(benchmark_name, params, port=port)
             # to load CARLA and the scenarios are made
@@ -294,7 +379,8 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
                 for renv in dbatch:
                     try:
                         # Just execute the environment. For this case the rewards doesnt matter.
-                        env_exec_info = benchmark_env_loop(renv, agent)
+                        env_exec_info = benchmark_env_loop(renv, agent,
+                                                           save_trajectories=save_trajectories)
                         logging.debug("Finished episode got summary ")
                         # Add partial summary to allow continuation
                         add_summary(renv._environment_name, env_exec_info['summary'],
@@ -316,7 +402,35 @@ def benchmark(benchmark_name, docker_image, gpu, agent_class_path, agent_params_
             break
         except:
             traceback.print_exc()
+            del env_batch
             break
+
+def execute_benchmark(benchmark_file_name, docker,
+                      gpu, agent_module, config, port, agent_name, non_rendering_mode,
+                      save_trajectories, make_videos):
+    """
+        Basically execute the benchmark and save it, with respect to the parameters sent.
+        This function is more about saving the benchmark than the execution itself.
+    :return:
+    """
+    #condition, task, town_name, docker
+    benchmark_file = os.path.join('version09x/descriptions', benchmark_file_name)
+    print (" STARTING BENCHMARK ", benchmark_file)
+    benchmark(benchmark_file, docker, gpu, agent_module, config, port=port,
+              agent_checkpoint_name=agent_name, save_sensors=True,
+              non_rendering_mode=non_rendering_mode,
+              save_trajectories=save_trajectories, make_videos=make_videos)
+    # Create the results folder here if it does not exists
+    if not os.path.exists('_results'):
+        os.mkdir('_results')
+
+    file_base_out = os.path.join('_results', benchmark_file_name.split('/')[-1])
+    summary_data = check_benchmarked_episodes_metric(benchmark_file,
+                                                     agent_name)
+
+    if check_benchmark_finished(benchmark_file, agent_name):
+        write_summary_csv(file_base_out, agent_name, summary_data)
+
 
 
 def benchmark_cleanup(package_name, agent_checkpoint_name):

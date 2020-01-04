@@ -6,10 +6,24 @@ class DummyAgent(object):
         The agent sets the sensors that it is going to use. That has to be
         set into the environment for it to produce this data.
         """
-        sensors_dict = [{'type': 'sensor.other.gnss',
+        sensors_dict = [
+                        {'type': 'sensor.other.gnss',
                          'x': 0.7, 'y': -0.4, 'z': 1.60,
                          'id': 'GPS'},
-
+                        {'type': 'sensor.camera.rgb',
+                         'x': 2.0, 'y': 0.0,
+                         'z': 1.40, 'roll': 0.0,
+                         'pitch': -15.0, 'yaw': 0.0,
+                         'width': 800, 'height': 600,
+                         'fov': 100,
+                         'id': 'rgb'},
+                        {'type': 'sensor.camera.depth',
+                         'x': 2.0, 'y': 0.0,
+                         'z': 1.40, 'roll': 0.0,
+                         'pitch': -15.0, 'yaw': 0.0,
+                         'width': 800, 'height': 600,
+                         'fov': 100,
+                         'id': 'depth'}
                         ]
 
         return sensors_dict
@@ -22,10 +36,19 @@ class DummyAgent(object):
         :return:
         """
 
+        exp = exp_list[0]
         # The first time this function is call we initialize the agent.
-        self._setup(exp_list[0])
+        self._setup(exp)
+        # Get the directions from the planner like a few papers.
+        direction = exp.get_current_direction()
 
-        return exp_list[0].get_sensor_data()
+        input = {
+            'rgb' : exp.get_sensor_data()['rgb'],
+            'direction': direction
+
+        }
+
+        return
 
     def step(self, state):
 

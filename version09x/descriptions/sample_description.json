@@ -1,0 +1,40 @@
+{
+    "default_random_seed": 1235123,
+    "envs": {
+      "SoftRainSunset_route00000": {
+        "repetitions": 1,
+        "route": {
+          "file": "nocrash/Town02_navigation.xml",
+          "id": 0
+        },
+        "scenarios": {
+          "background_activity": {
+            "vehicle.*": 70,
+            "walker.*": 300,
+            "cross_factor": 0.5
+          }
+        },
+        "town_name": "Town02",
+        "vehicle_model": "vehicle.lincoln.mkz2017",
+        "weather_profile": "SoftRainNoon"
+      },
+      "SoftRainSunset_route00001_t1": {
+        "repetitions": 1,
+        "route": {
+          "file": "nocrash/Town01_navigation.xml",
+          "id": 1
+        },
+        "scenarios": {
+          "background_activity": {
+            "vehicle.*": 70,
+            "walker.*": 400,
+            "cross_factor": 0.5
+          }
+        },
+        "town_name": "Town01",
+        "vehicle_model": "vehicle.lincoln.mkz2017",
+        "weather_profile": "SoftRainNoon"
+      }
+    },
+    "package_name": "sample_test"
+}

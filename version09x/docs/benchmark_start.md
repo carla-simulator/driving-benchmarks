@@ -41,12 +41,10 @@ TO BE ADDED
 This command benchmarks a dummy agent (goes forward) on a sample cust
 three episodes benchmark: 
 
-    python3 benchmark_runner.py -b database/sample_benchmark.json -d <docker_image_name> -a cexp/agents/DummyAgent.py
+    python3 benchmark_runner.py -b sample_description.json -d <docker_image_name> -a cexp/agents/DummyAgent.py
 
 The CARLA docker images can be obtained by using [this tutorial](https://carla.readthedocs.io/en/latest/carla_docker/)
 
 
 ### Defining the Agent Class to be Benchmarked
 
-
-To be Added

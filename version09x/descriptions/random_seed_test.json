@@ -1,0 +1,59 @@
+{
+    "envs": {
+      "SoftRainSunset_route00000_r1": {
+        "random_seed": 1,
+        "repetitions": 1,
+        "route": {
+          "file": "nocrash/Town02_navigation.xml",
+          "id": 0
+        },
+        "scenarios": {
+          "background_activity": {
+            "vehicle.*": 70,
+            "walker.*": 300,
+            "cross_factor": 0.5
+          }
+        },
+        "town_name": "Town02",
+        "vehicle_model": "vehicle.lincoln.mkz2017",
+        "weather_profile": "SoftRainNoon"
+      },
+      "SoftRainSunset_route00000_r2": {
+        "random_seed": 2,
+        "repetitions": 1,
+        "route": {
+          "file": "nocrash/Town02_navigation.xml",
+          "id": 0
+        },
+        "scenarios": {
+          "background_activity": {
+            "vehicle.*": 70,
+            "walker.*": 300,
+            "cross_factor": 0.5
+          }
+        },
+        "town_name": "Town02",
+        "vehicle_model": "vehicle.lincoln.mkz2017",
+        "weather_profile": "SoftRainNoon"
+      },
+      "SoftRainSunset_route00000_r1b": {
+        "random_seed": 1,
+        "repetitions": 1,
+        "route": {
+          "file": "nocrash/Town02_navigation.xml",
+          "id": 0
+        },
+        "scenarios": {
+          "background_activity": {
+            "vehicle.*": 70,
+            "walker.*": 300,
+            "cross_factor": 0.5
+          }
+        },
+        "town_name": "Town02",
+        "vehicle_model": "vehicle.lincoln.mkz2017",
+        "weather_profile": "SoftRainNoon"
+      }
+    },
+    "package_name": "random_test"
+}
