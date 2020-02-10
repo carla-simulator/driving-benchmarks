@@ -153,6 +153,10 @@ def generate():
                               },
     }
 
+    time_out_dict = {'dense': 1.2,
+                     'regular': 1.0,
+                     'empty': 0.8 }
+
     for task_name in tasks.keys():
 
         for town_name in town_sets.keys():
@@ -160,7 +164,8 @@ def generate():
             for w_set_name in weather_sets.keys():
                 # get the actual set  from th name
                 w_set = weather_sets[w_set_name]
-                new_json = {"envs": {},
+                new_json = { "default_seconds_per_meter": time_out_dict[task_name],
+                            "envs": {},
                             "package_name": 'nocrash_' + name_dict[w_set_name][town_name] + '_'
                                             + task_name + '_' + town_name}
 

@@ -310,6 +310,7 @@ def benchmark_env_loop(renv, agent, save_trajectories=False):
     sensors_dict = agent.get_sensors_dict()
     renv.set_sensors(sensors_dict)
 
+    # TODO is this a previous state ?
     state, _ = renv.reset(StateFunction=agent.get_state)
 
     with tqdm(total=renv.get_timeout()) as pbar:  # we keep a progress bar
